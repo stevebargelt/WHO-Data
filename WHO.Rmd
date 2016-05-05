@@ -1,0 +1,47 @@
+---
+title: "World Health Organization (WHO) Cholesterol Data vs. Death Rates"
+author: "Steve Bargelt"
+date: "May 5, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Getting Started
+
+### Load packages
+
+In this lab we will explore the data using the `dplyr` package and visualize it 
+using the `ggplot2` package for data visualization. The data can be found in the
+companion package for this course, `statsr`.
+
+Let's load the packages.
+
+```{r load-packages, message=FALSE}
+library(WHO)
+library(dplyr)
+library(ggplot2)
+```
+
+### Data
+
+Our investigation will focus on 
+Let's load some necessary files that we will need for this lab.
+
+```{r load-data}
+
+load(file="db.RData")
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
