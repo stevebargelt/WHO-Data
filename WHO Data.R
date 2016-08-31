@@ -1,5 +1,4 @@
 library(dplyr)
-library(ggplot2)
 library(WHO)
 
 CHO_Age_Stand <- get_data("CHOL_03")

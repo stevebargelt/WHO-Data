@@ -19,6 +19,12 @@ library(WHO)
 library(plyr)
 library(dplyr)
 library(ggplot2)
+library(scales)
+library(showtext)
+library(scatterD3)
+library(stringr)
+library(RColorBrewer)
+library(dygraphs)
 ```
 
 ### Data
@@ -34,23 +40,21 @@ load(file="choDeathData.RData")
 ```
 
 ## Age Standardized vs. Crude Cholesterol Numbers
-```{r removingOneCHOnumber}
-mean(choDeathData$choAgeStandValue, na.rm = TRUE)
-mean(choDeathData$choCrudeValue, na.rm = TRUE)
-median(choDeathData$choAgeStandValue, na.rm = TRUE)
-median(choDeathData$choCrudeValue, na.rm = TRUE)
-IQR(choDeathData$choAgeStandValue, na.rm = TRUE)
-IQR(choDeathData$choCrudeValue, na.rm = TRUE)
 
-nrow(choDeathData[complete.cases(choDeathData[,c(7,8)]),])
-nrow(choDeathData[complete.cases(choDeathData[,c(7,9)]),])
-```
+Must decide on one or the other since not all values are present for all data points. Decided to use Age Standardized value since there are ~20 more complete cases.
 
-Must decide on one or the other since not all values are present for all data points. Decided to use Age Standardized value since there are ~20 more compelte cases.
+Mean Age Standardized: `r mean(choDeathData$choAgeStandValue, na.rm = TRUE)` <br />
+Mean Crude: `r mean(choDeathData$choCrudeValue, na.rm = TRUE)` <br />
+Median Age Standardized: `r median(choDeathData$choAgeStandValue, na.rm = TRUE)` <br />
+Median Crude: `r median(choDeathData$choCrudeValue, na.rm = TRUE)` <br />
+IQR Age Standardized: `r IQR(choDeathData$choAgeStandValue, na.rm = TRUE)` <br />
+IQR Crude: `r IQR(choDeathData$choCrudeValue, na.rm = TRUE)` <br />
+Number of complete samples Crude: `r  nrow(choDeathData[complete.cases(choDeathData[,c(7,8)]),])` <br />
+Number of complete samples Age Standardized: `r nrow(choDeathData[complete.cases(choDeathData[,c(7,9)]),])` <br />
 
 ```{r remove choAgeStanValue}
-#choDeathData$choAgeStandValue <- NULL
-choDeathData <- choDeathData[complete.cases(choDeathData[,c(7,9)]),]
+#choDeathData$choCrudeValue <- NULL
+choDeathData <- choDeathData[complete.cases(choDeathData[,c(7,8)]),]
 
 ```
 
@@ -59,23 +63,36 @@ choDeathData <- choDeathData[complete.cases(choDeathData[,c(7,9)]),]
 You can also embed plots, for example:
 
 ```{r maleCHOCrude, echo=FALSE}
-
 r2<-ddply(choDeathData,.(sex),function(x) summary(lm(x$totalCVDvalue ~ x$choAgeStandValue))$r.squared)
 names(r2)<-c("sex","r2")
 
 r<-ddply(choDeathData,.(sex),function(x) cor(x$totalCVDvalue, x$choAgeStandValue, , method="pearson"))
 names(r)<-c("sex","r")
 
-
 g<-ggplot(choDeathData, aes(x=choAgeStandValue,y=totalCVDvalue,group=sex))
 g<-g+geom_point(aes(color=sex))
-g<-g+geom_smooth(method="lm",aes(color=sex))
 g<-g+geom_text(data=r2,aes(color=sex, label = paste("R^2: ", r2,sep="")),parse=T,x=5.5,y=c(800,750), show.legend=TRUE)
 g<-g+geom_text(data=r,aes(color=sex, label = paste("R: ", r,sep="")),parse=T,x=5.5,y=c(700,650), show.legend=TRUE)
 g<-g+theme_light(9)
 g+labs(x = "Age standardized cholesterol Mean mmol/L\n", y = "CVD Death rate per 100,000", 
        linetype = NULL, color = NULL,
        title = "Cardiovascualr Death Rate vs. Mean Cholesteral (Age Standardized) (by region)\n")
+
+
+scatterD3(x = choDeathData$choAgeStandValue, 
+          y = choDeathData$totalCVDvalue, 
+          lab = "", #choDeathData$country,
+          #size_var = comb$InfantMortality,
+          col_var=choDeathData$sex,
+          symbol_var = choDeathData$region,
+          xlab = "Cholesterol mmol//L", 
+          ylab = "Death rate per 100,000 from all CVD", 
+          col_lab = "Gender",
+          symbol_lab = "Regions",
+          size_lab = "Size Label",
+          lasso = TRUE, 
+          ellipses = TRUE)
+          
 
 choDeathData %>% 
   filter(sex == "Male") %>% 
