@@ -25,8 +25,13 @@ library(RColorBrewer)
 library(dygraphs)
 ```
 
+## Background and Inspiration
+
+The investigation will focus on World Health Organization data on cholesterol data and correlation to cardiovascular (CVD) as casue of death. 
 
 ### Sources and More Information
+
+You can find all of the source code at [Github](https://github.com/stevebargelt/WHO-Data "WHO Cholesterol Data").
 
 [World Health Organization (WHO) Global Health Observatory (GHO)](http://www.who.int/gho/en/)
 
@@ -36,6 +41,9 @@ library(dygraphs)
 
 [WHO Cerebrovascular Data](https://rho.emro.who.int/rhodata/node.main.A1073?lang=en)
 
+## Data Acquisition
+
+The data takes quite a while to download from the WHO (3-4 minutes on a fast internet connection). You will find a stand-alone R script in the Github repo that will save the data to local files to speed up ad-hoc analysis.
 
 ### Use the WHO API to get the data we want to analyze.
 ```{r download-data}
@@ -49,28 +57,29 @@ CVD_Ischaemic <- get_data("SA_0000001444")
 
 ```
 
-### Data
+## Tidying up the data
 
-The investigation will focus on World Health Organization data on cholesterol data and correlation to cardiovascular (CVD) as casue of death. 
-
-The data takes quite a while to download from the WHO (3-4 minutes on a fast internet connection). You can find all of the source code at [Github](https://github.com/stevebargelt/WHO-Data "WHO Cholesterol Data").
-
-```{r }
-
+The Cholesterol (CHO) values are stored in the as a character string "5.0 [4.8-5.3]" - the following code strips out everything between and including the [ ] leaving us with a numeric value for each entry.
+```{r clean-cho-data}
 CHO_Age_Stand$value <- gsub( " *\\[.*?\\] *", "", CHO_Age_Stand$value)
-which(is.na(as.numeric(as.character(CHO_Age_Stand[[8]]))))
 CHO_Age_Stand$value <- as.numeric(CHO_Age_Stand$value)
 
 CHO_Crude$value <- gsub( " *\\[.*?\\] *", "", CHO_Crude$value)
 CHO_Crude$value <- as.numeric(CHO_Crude$value)
+```
 
+Combine [Cerebrovascular](https://en.wikipedia.org/wiki/Cerebrovascular_disease) and [Ischaemic](https://en.wikipedia.org/wiki/Coronary_artery_disease) death rates to get a picture of all Cardiovascualr death rates.
+```{r }
 CVD_ALL <- merge(CVD_Cerebrovascular, CVD_Ischaemic, by=c("year", "region", "country", "sex", "publishstate"))
 CVD_ALL$totalCVDvalue = CVD_ALL$value.x + CVD_ALL$value.y
 colnames(CVD_ALL)[7] <- "cerrbrovascularValue"
 colnames(CVD_ALL)[9] <- "ischaemicValue"
 CVD_ALL$gho.y <- NULL
 CVD_ALL$gho.x <- NULL
+```
 
+Merging cholesterol data with all cardiovascular death data
+```{r }
 db <- merge(CVD_ALL, CHO_Crude, by=c("year", "region", "country", "sex", "publishstate"))
 colnames(db)[11] <- "choCrudeValue"
 db$gho <- NULL
@@ -103,9 +112,9 @@ choDeathData <- choDeathData[complete.cases(choDeathData[,c(7,8)]),]
 
 ```
 
-### Analysis
+## Analysis
 
-```{r maleCHOCrude, echo=FALSE}
+```{r CHOcrude, echo=FALSE}
 r2<-ddply(choDeathData,.(sex),function(x) summary(lm(x$totalCVDvalue ~ x$choAgeStandValue))$r.squared)
 names(r2)<-c("sex","r2")
 
@@ -120,22 +129,35 @@ g<-g+theme_light(9)
 g+labs(x = "Age standardized cholesterol Mean mmol/L\n", y = "CVD Death rate per 100,000", 
        linetype = NULL, color = NULL,
        title = "Cardiovascualr Death Rate vs. Mean Cholesteral (Age Standardized) (by region)\n")
+```
 
+
+
+This chart is interactie. You can zoom in and out on the data points. You can also hover over the Legend on the right to highlight only the data that corresponds to the symbol you are hovering over. Hovering over a datapoint give your more information. Finally you can lasso (SHIFT-Click and Drag) a set of points to single them out.
+
+```{r CHO_death_interactive, echo=FALSE}
+
+tooltips <- paste("<strong>", choDeathData$country,"</strong><br />", 
+                  "Region: ", choDeathData$region, "<br />",
+                  "CHO: ", choDeathData$choAgeStandValue, "<br />",
+                  "Deaths: ", choDeathData$totalCVDvalue
+                  )
 
 scatterD3(x = choDeathData$choAgeStandValue, 
           y = choDeathData$totalCVDvalue, 
-          lab = "", #choDeathData$country,
-          #size_var = comb$InfantMortality,
           col_var=choDeathData$sex,
           symbol_var = choDeathData$region,
-          xlab = "Cholesterol mmol//L", 
+          xlab = "Cholesterol mmol//L (Age Standardized)", 
           ylab = "Death rate per 100,000 from all CVD", 
           col_lab = "Gender",
           symbol_lab = "Regions",
-          size_lab = "Size Label",
           lasso = TRUE, 
-          ellipses = TRUE)
-          
+          ellipses = TRUE,
+          tooltip_text = tooltips)
+```
+
+
+```{r maleonly, echo=FALSE}
 
 choDeathData %>% 
   filter(sex == "Male") %>% 
@@ -145,9 +167,10 @@ choDeathData %>%
   theme_light(9) +
   labs(x = "Cholesterol Mean mmol/L\n", y = "Male CVD Death rate per 100,000", 
        linetype = NULL, color = NULL,
-       title = "Cardiovascualr Death Rate vs. Mean Cholesteral (crude) (by region)\n")
+       title = "Male Cardiovascualr Death Rate vs. Mean Cholesteral (crude) (by region)\n")
 
 ```
+
 
 ```{r femaleCHOCrude, echo=FALSE}
 choDeathData %>% 
@@ -158,9 +181,10 @@ choDeathData %>%
   theme_light(9) +
   labs(x = "Cholesterol Mean mmol/L\n", y = "Female CVD Death rate per 100,000", 
        linetype = NULL, color = NULL,
-       title = "Cardiovascualr Death Rate vs. Mean Cholesteral (crude) (by region)\n")
+       title = "Female Cardiovascular Death Rate vs. Mean Cholesteral (crude) (by region)\n")
 
 ```
+
 
 ```{r maleCHOAgeStand, echo=FALSE}
 choDeathData %>% 
@@ -171,9 +195,10 @@ choDeathData %>%
   theme_light(9) +
   labs(x = "Cholesterol Mean mmol/L\n", y = "Male CVD Death rate per 100,000", 
        linetype = NULL, color = NULL,
-       title = "Cardiovascualr Death Rate vs. Mean Cholesteral (Age Standardized) (by region)\n")
+       title = "Male Cardiovascualr Death Rate vs. Mean Cholesteral (Age Standardized) (by region)\n")
 
 ```
+
 
 ```{r femaleCHOAgeStand, echo=FALSE}
 choDeathData %>% 
@@ -184,6 +209,6 @@ choDeathData %>%
   theme_light(9) +
   labs(x = "Cholesterol Mean mmol/L\n", y = "Female CVD Death rate per 100,000", 
        linetype = NULL, color = NULL,
-       title = "Cardiovascualr Death Rate vs. Mean Cholesteral (Age Standardized) (by region)\n")
+       title = "Female Cardiovascualr Death Rate vs. Mean Cholesteral (Age Standardized) (by region)\n")
 
 ```
