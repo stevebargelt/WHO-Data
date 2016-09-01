@@ -61,13 +61,16 @@ CVD_Ischaemic <- get_data("SA_0000001444")
 
 ## Tidying up the data
 
-The Cholesterol (CHO) values are stored in the as a character string "5.0 [4.8-5.3]" - the following code strips out everything between and including the [ ] leaving us with a numeric value for each entry.
+The Cholesterol (CHO) values are stored in the as a character string "5.0 [4.8-5.3]" - the following code strips out everything between and including the [ ] leaving us with a numeric value for each entry. I also convert from mmol/L to mg/dl by multiplying by 38.67, since I'm in the US and we have to be different. 
 ```{r clean-cho-data}
-CHO_Age_Stand$value <- gsub( " *\\[.*?\\] *", "", CHO_Age_Stand$value)
+
+CHO_Age_Stand$value <- gsub(" *\\[.*?\\] *", "", CHO_Age_Stand$value)
 CHO_Age_Stand$value <- as.numeric(CHO_Age_Stand$value)
+CHO_Age_Stand$value <- CHO_Age_Stand$value * 38.67
 
 CHO_Crude$value <- gsub( " *\\[.*?\\] *", "", CHO_Crude$value)
 CHO_Crude$value <- as.numeric(CHO_Crude$value)
+CHO_Crude$value <- CHO_Crude$value * 38.67
 ```
 
 Combine [Cerebrovascular](https://en.wikipedia.org/wiki/Cerebrovascular_disease) (strokes) and [Ischaemic](https://en.wikipedia.org/wiki/Coronary_artery_disease) (heart attack) death rates to get a picture of all Cardiovascualr death rates.
@@ -127,12 +130,13 @@ names(r)<-c("sex","r")
 
 g<-ggplot(choDeathData, aes(x=choAgeStandValue,y=totalCVDvalue,color=sex))
 g<-g+geom_point()
-g<-g+geom_text(data=r2,aes(color=sex, label = paste("R^2: ", r2,sep="")),parse=T,x=5.5,y=c(800,750), show.legend=TRUE)
-g<-g+geom_text(data=r,aes(color=sex, label = paste("R: ", r,sep="")),parse=T,x=5.5,y=c(700,650), show.legend=TRUE)
+g<-g+geom_text(data=r2,aes(color=sex, label = paste("R^2: ", r2,sep="")),parse=T,x=215,y=c(800,750), show.legend=TRUE)
+g<-g+geom_text(data=r,aes(color=sex, label = paste("R: ", r,sep="")),parse=T,x=215,y=c(700,650), show.legend=TRUE)
 g<-g+theme_light(9)
 g<-g+stat_smooth() 
-g<-g+geom_vline(xintercept = 5.2)
-g+labs(x = "Age standardized cholesterol Mean mmol/L\n", y = "CVD Death rate per 100,000",
+g<-g+geom_vline(xintercept = 200, color="red")
+g<-g+geom_text(aes(x=201, label="High CHO", y=550), colour="red", angle=90)
+g+labs(x = "Age standardized cholesterol Mean mg/dL\n", y = "CVD Death rate per 100,000",
        linetype = NULL, color = NULL,
        title = "Cardiovascualr Death Rate vs. Mean Cholesteral (Age Standardized) (by country)\n")
 ```
@@ -151,7 +155,7 @@ scatterD3(x = choDeathData$choAgeStandValue,
           y = choDeathData$totalCVDvalue, 
           col_var=choDeathData$sex,
           symbol_var = choDeathData$region,
-          xlab = "Cholesterol mmol//L (Age Standardized)", 
+          xlab = "Cholesterol mg/dL (Age Standardized)", 
           ylab = "Death rate per 100,000 from all CVD", 
           col_lab = "Gender",
           symbol_lab = "Regions",
@@ -168,7 +172,7 @@ choDeathData %>%
   geom_point(shape=1) +    # Use hollow circles
   geom_smooth(method = lm) +
   theme_light(9) +
-  labs(x = "Cholesterol Mean mmol/L\n", y = "Male CVD Death rate per 100,000", 
+  labs(x = "Cholesterol Mean mg/dL\n", y = "Male CVD Death rate per 100,000", 
        linetype = NULL, color = NULL,
        title = "Male Cardiovascualr Death Rate vs. Mean Cholesteral (Age Standardized) (by country)\n")
 
@@ -182,7 +186,7 @@ choDeathData %>%
   geom_point(shape=1) +    # Use hollow circles
   geom_smooth(method = lm) +
   theme_light(9) +
-  labs(x = "Cholesterol Mean mmol/L\n", y = "Female CVD Death rate per 100,000", 
+  labs(x = "Cholesterol Mean mg/dL\n", y = "Female CVD Death rate per 100,000", 
        linetype = NULL, color = NULL,
        title = "Female Cardiovascualr Death Rate vs. Mean Cholesteral (Age Standardized) (by country)\n")
 
