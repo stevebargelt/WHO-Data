@@ -6,10 +6,9 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo=TRUE)
+knitr::opts_chunk$set(cache=TRUE)
 ```
-
-## Getting Started
 
 ### Load packages
 
@@ -27,15 +26,90 @@ library(RColorBrewer)
 library(dygraphs)
 ```
 
+
+### Sources and More Information
+
+[World Health Organization (WHO) Global Health Observatory (GHO)](http://www.who.int/gho/en/)
+
+[WHO Cholesterol Data](http://apps.who.int/gho/data/node.main.A883?lang=en)
+
+[WHO Ischaemic Data](https://rho.emro.who.int/rhodata/node.main.A1079?lang=en)
+
+[WHO Cerebrovascular Data](https://rho.emro.who.int/rhodata/node.main.A1073?lang=en)
+
+
+
+### Use the WHO API to get the data we want to analyze.
+```{r download-data}
+
+CHO_Age_Stand <- get_data("CHOL_03")
+CHO_Crude <- get_data("CHOL_04")
+#CVD_Cerebrovascular_DALY <- get_data("SA_0000001689")
+CVD_Cerebrovascular <- get_data("SA_0000001690")
+#CVD_Ischaemic_DALY <- get_data("SA_0000001425")
+CVD_Ischaemic <- get_data("SA_0000001444")
+
+```
+
+### Save Data Files
+
+```{r save-data-files}
+
+#Change the working directory
+#setwd("~/code-Stats/WHO")
+#save(CHO_Age_Stand, file="CHO_Age_Stand.RData")
+#save(CHO_Crude, file="CHO_Crude.RData")
+#save(CVD_Cerebrovascular_DALY, file="CVD_Cerebrovascular_DALY.RData")
+#save(CVD_Cerebrovascular, file="CVD_Cerebrovascular.RData")
+#save(CVD_Ischaemic_DALY, file="CVD_Ischaemic_DALY.RData")
+#save(CVD_Ischaemic, file="CVD_Ischaemic.RData")
+
+```
+
+## Getting Started
+
 ### Data
 
 Our investigation will focus on World Health Organization data on cholesterol data and correlation to non-communicable diseases as casue of death. 
 
-Load the data file... you can find a description of my file preparation and ALL source code at [Github](https://github.com/stevebargelt/WHO-Data "WHO Cholesterol Data")
+The data takes quite a while to download from the WHO (3-4 minutes on a fast internet connection) You can find all of the source code at [Github](https://github.com/stevebargelt/WHO-Data "WHO Cholesterol Data").
 
 ```{r load-data}
 
-load(file="choDeathData.RData")
+#Change the working directory
+#setwd("~/code-Stats/WHO")
+
+#load("CHO_Age_Stand.RData")
+#load("CHO_Crude.RData")
+#load("CVD_Cerebrovascular_DALY.RData")
+#load("CVD_Cerebrovascular.RData")
+#load("CVD_Ischaemic_DALY.RData")
+#load("CVD_Ischaemic.RData")
+
+CHO_Age_Stand$value <- gsub( " *\\[.*?\\] *", "", CHO_Age_Stand$value)
+which(is.na(as.numeric(as.character(CHO_Age_Stand[[8]]))))
+CHO_Age_Stand$value <- as.numeric(CHO_Age_Stand$value)
+
+CHO_Crude$value <- gsub( " *\\[.*?\\] *", "", CHO_Crude$value)
+CHO_Crude$value <- as.numeric(CHO_Crude$value)
+
+CVD_ALL <- merge(CVD_Cerebrovascular, CVD_Ischaemic, by=c("year", "region", "country", "sex", "publishstate"))
+CVD_ALL$totalCVDvalue = CVD_ALL$value.x + CVD_ALL$value.y
+colnames(CVD_ALL)[7] <- "cerrbrovascularValue"
+colnames(CVD_ALL)[9] <- "ischaemicValue"
+CVD_ALL$gho.y <- NULL
+CVD_ALL$gho.x <- NULL
+
+db <- merge(CVD_ALL, CHO_Crude, by=c("year", "region", "country", "sex", "publishstate"))
+colnames(db)[11] <- "choCrudeValue"
+db$gho <- NULL
+
+choDeathData <- merge(db, CHO_Age_Stand, by=c("year", "region", "country", "sex", "publishstate", "agegroup"))
+colnames(choDeathData)[12] <- "choAgeStandValue"
+choDeathData$gho <- NULL
+choDeathData$publishstate <- NULL
+choDeathData$agegroup <- NULL
+choDeathData$sex <- as.factor((choDeathData$sex))
 
 ```
 
