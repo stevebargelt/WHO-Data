@@ -1,4 +1,8 @@
+#Download Data and Save Locally
+
 library(WHO)
+
+# Use WHO API to grab Data
 
 CHO_Age_Stand <- get_data("CHOL_03")
 CHO_Crude <- get_data("CHOL_04")
@@ -7,11 +11,15 @@ CVD_Cerebrovascular <- get_data("SA_0000001690")
 #CVD_Ischaemic_DALY <- get_data("SA_0000001425")
 CVD_Ischaemic <- get_data("SA_0000001444")
 
+
+# Save Data Files
+
 #Change the working directory
-setwd("~/code-Stats/WHO")
+setwd("~/code-Stats/WHO/data")
 save(CHO_Age_Stand, file="CHO_Age_Stand.RData")
 save(CHO_Crude, file="CHO_Crude.RData")
 #save(CVD_Cerebrovascular_DALY, file="CVD_Cerebrovascular_DALY.RData")
 save(CVD_Cerebrovascular, file="CVD_Cerebrovascular.RData")
 #save(CVD_Ischaemic_DALY, file="CVD_Ischaemic_DALY.RData")
 save(CVD_Ischaemic, file="CVD_Ischaemic.RData")
+

@@ -1,7 +1,7 @@
 ---
-title: "World Health Organization (WHO) Cholesterol Data vs. Death Rates"
+title: "World Health Organization (WHO) Cholesterol Data vs. Cardiovascular Death Rates"
 author: "Steve Bargelt"
-date: "May 5, 2016"
+date: "August 31, 2016"
 output: html_document
 ---
 
@@ -12,7 +12,6 @@ knitr::opts_chunk$set(cache=TRUE)
 
 ### Load packages
 
-Package loading:
 ```{r load-packages, message=FALSE}
 library(WHO)
 library(plyr)
@@ -38,7 +37,6 @@ library(dygraphs)
 [WHO Cerebrovascular Data](https://rho.emro.who.int/rhodata/node.main.A1073?lang=en)
 
 
-
 ### Use the WHO API to get the data we want to analyze.
 ```{r download-data}
 
@@ -51,40 +49,13 @@ CVD_Ischaemic <- get_data("SA_0000001444")
 
 ```
 
-### Save Data Files
-
-```{r save-data-files}
-
-#Change the working directory
-#setwd("~/code-Stats/WHO")
-#save(CHO_Age_Stand, file="CHO_Age_Stand.RData")
-#save(CHO_Crude, file="CHO_Crude.RData")
-#save(CVD_Cerebrovascular_DALY, file="CVD_Cerebrovascular_DALY.RData")
-#save(CVD_Cerebrovascular, file="CVD_Cerebrovascular.RData")
-#save(CVD_Ischaemic_DALY, file="CVD_Ischaemic_DALY.RData")
-#save(CVD_Ischaemic, file="CVD_Ischaemic.RData")
-
-```
-
-## Getting Started
-
 ### Data
 
-Our investigation will focus on World Health Organization data on cholesterol data and correlation to non-communicable diseases as casue of death. 
+The investigation will focus on World Health Organization data on cholesterol data and correlation to cardiovascular (CVD) as casue of death. 
 
-The data takes quite a while to download from the WHO (3-4 minutes on a fast internet connection) You can find all of the source code at [Github](https://github.com/stevebargelt/WHO-Data "WHO Cholesterol Data").
+The data takes quite a while to download from the WHO (3-4 minutes on a fast internet connection). You can find all of the source code at [Github](https://github.com/stevebargelt/WHO-Data "WHO Cholesterol Data").
 
-```{r load-data}
-
-#Change the working directory
-#setwd("~/code-Stats/WHO")
-
-#load("CHO_Age_Stand.RData")
-#load("CHO_Crude.RData")
-#load("CVD_Cerebrovascular_DALY.RData")
-#load("CVD_Cerebrovascular.RData")
-#load("CVD_Ischaemic_DALY.RData")
-#load("CVD_Ischaemic.RData")
+```{r }
 
 CHO_Age_Stand$value <- gsub( " *\\[.*?\\] *", "", CHO_Age_Stand$value)
 which(is.na(as.numeric(as.character(CHO_Age_Stand[[8]]))))
@@ -113,9 +84,9 @@ choDeathData$sex <- as.factor((choDeathData$sex))
 
 ```
 
-## Age Standardized vs. Crude Cholesterol Numbers
+### Age Standardized vs. Crude Cholesterol Numbers
 
-Must decide on one or the other since not all values are present for all data points. Decided to use Age Standardized value since there are ~20 more complete cases.
+Must decide on one or the other since not all values are present for all data points. I have decided to use Age Standardized value since there are ~20 more complete cases.
 
 Mean Age Standardized: `r mean(choDeathData$choAgeStandValue, na.rm = TRUE)` <br />
 Mean Crude: `r mean(choDeathData$choCrudeValue, na.rm = TRUE)` <br />
@@ -132,9 +103,7 @@ choDeathData <- choDeathData[complete.cases(choDeathData[,c(7,8)]),]
 
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
+### Analysis
 
 ```{r maleCHOCrude, echo=FALSE}
 r2<-ddply(choDeathData,.(sex),function(x) summary(lm(x$totalCVDvalue ~ x$choAgeStandValue))$r.squared)
@@ -218,5 +187,3 @@ choDeathData %>%
        title = "Cardiovascualr Death Rate vs. Mean Cholesteral (Age Standardized) (by region)\n")
 
 ```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
