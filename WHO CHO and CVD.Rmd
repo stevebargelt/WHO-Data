@@ -1,5 +1,5 @@
 ---
-title: "World Health Organization (WHO) Cholesterol Data vs. Cardiovascular Death Rates"
+title: "World Health Organization Cholesterol Data vs. Cardiovascular Death Rates"
 author: "Steve Bargelt"
 date: "August 31, 2016"
 output: html_document
@@ -27,11 +27,13 @@ library(dygraphs)
 
 ## Background and Inspiration
 
-The investigation will focus on World Health Organization data on cholesterol data and correlation to cardiovascular (CVD) as casue of death. 
+I watched a presentataion by Zoë Harcombe and where she referenced her data analysis of World Health Organization data on cholesterol and cardiovascular disease mortality rates. She mentioned that the relationshio between cholesterol numbers and cardiovascular related deaths is the opposite of what you'd expect. I found her original post on the subject [Zoë Harcombe's cholesterol and heart disease relationship](http://www.zoeharcombe.com/2010/11/cholesterol-heart-disease-there-is-a-relationship-but-its-not-what-you-think/) 
+
+I was pretty surprised that she did not publish how she came to this conculsion. In other words, the results were not reproducable. I wanted to reproduce this result and share all of the data **and code** so that other's can critique my methods and results.  Here is my repo with all code and data acquisition code so others can investigate my work [Github](https://github.com/stevebargelt/WHO-Data).
 
 ### Sources and More Information
 
-You can find all of the source code at [Github](https://github.com/stevebargelt/WHO-Data "WHO Cholesterol Data").
+You can find all of the source code at [Github](https://github.com/stevebargelt/WHO-Data)
 
 [World Health Organization (WHO) Global Health Observatory (GHO)](http://www.who.int/gho/en/)
 
@@ -68,7 +70,7 @@ CHO_Crude$value <- gsub( " *\\[.*?\\] *", "", CHO_Crude$value)
 CHO_Crude$value <- as.numeric(CHO_Crude$value)
 ```
 
-Combine [Cerebrovascular](https://en.wikipedia.org/wiki/Cerebrovascular_disease) and [Ischaemic](https://en.wikipedia.org/wiki/Coronary_artery_disease) death rates to get a picture of all Cardiovascualr death rates.
+Combine [Cerebrovascular](https://en.wikipedia.org/wiki/Cerebrovascular_disease) (strokes) and [Ischaemic](https://en.wikipedia.org/wiki/Coronary_artery_disease) (heart attack) death rates to get a picture of all Cardiovascualr death rates.
 ```{r }
 CVD_ALL <- merge(CVD_Cerebrovascular, CVD_Ischaemic, by=c("year", "region", "country", "sex", "publishstate"))
 CVD_ALL$totalCVDvalue = CVD_ALL$value.x + CVD_ALL$value.y
@@ -78,7 +80,7 @@ CVD_ALL$gho.y <- NULL
 CVD_ALL$gho.x <- NULL
 ```
 
-Merging cholesterol data with all cardiovascular death data
+Merge cholesterol data with all cardiovascular death data
 ```{r }
 db <- merge(CVD_ALL, CHO_Crude, by=c("year", "region", "country", "sex", "publishstate"))
 colnames(db)[11] <- "choCrudeValue"
@@ -95,7 +97,7 @@ choDeathData$sex <- as.factor((choDeathData$sex))
 
 ### Age Standardized vs. Crude Cholesterol Numbers
 
-Must decide on one or the other since not all values are present for all data points. I have decided to use Age Standardized value since there are ~20 more complete cases.
+Must decide on one or the other since not all values are present for all data points. 
 
 Mean Age Standardized: `r mean(choDeathData$choAgeStandValue, na.rm = TRUE)` <br />
 Mean Crude: `r mean(choDeathData$choCrudeValue, na.rm = TRUE)` <br />
@@ -106,6 +108,8 @@ IQR Crude: `r IQR(choDeathData$choCrudeValue, na.rm = TRUE)` <br />
 Number of complete samples Crude: `r  nrow(choDeathData[complete.cases(choDeathData[,c(7,8)]),])` <br />
 Number of complete samples Age Standardized: `r nrow(choDeathData[complete.cases(choDeathData[,c(7,9)]),])` <br />
 
+I have decided to use Age Standardized value since there are ~20 more complete cases. 
+
 ```{r remove choAgeStanValue}
 #choDeathData$choCrudeValue <- NULL
 choDeathData <- choDeathData[complete.cases(choDeathData[,c(7,8)]),]
@@ -114,26 +118,26 @@ choDeathData <- choDeathData[complete.cases(choDeathData[,c(7,8)]),]
 
 ## Analysis
 
-```{r CHOcrude, echo=FALSE}
+```{r male-female-age-standardized-with-r-values, echo=FALSE}
 r2<-ddply(choDeathData,.(sex),function(x) summary(lm(x$totalCVDvalue ~ x$choAgeStandValue))$r.squared)
 names(r2)<-c("sex","r2")
 
 r<-ddply(choDeathData,.(sex),function(x) cor(x$totalCVDvalue, x$choAgeStandValue, , method="pearson"))
 names(r)<-c("sex","r")
 
-g<-ggplot(choDeathData, aes(x=choAgeStandValue,y=totalCVDvalue,group=sex))
-g<-g+geom_point(aes(color=sex))
+g<-ggplot(choDeathData, aes(x=choAgeStandValue,y=totalCVDvalue,color=sex))
+g<-g+geom_point()
 g<-g+geom_text(data=r2,aes(color=sex, label = paste("R^2: ", r2,sep="")),parse=T,x=5.5,y=c(800,750), show.legend=TRUE)
 g<-g+geom_text(data=r,aes(color=sex, label = paste("R: ", r,sep="")),parse=T,x=5.5,y=c(700,650), show.legend=TRUE)
 g<-g+theme_light(9)
-g+labs(x = "Age standardized cholesterol Mean mmol/L\n", y = "CVD Death rate per 100,000", 
+g<-g+stat_smooth() 
+g<-g+geom_vline(xintercept = 5.2)
+g+labs(x = "Age standardized cholesterol Mean mmol/L\n", y = "CVD Death rate per 100,000",
        linetype = NULL, color = NULL,
-       title = "Cardiovascualr Death Rate vs. Mean Cholesteral (Age Standardized) (by region)\n")
+       title = "Cardiovascualr Death Rate vs. Mean Cholesteral (Age Standardized) (by country)\n")
 ```
-
-
-
-This chart is interactie. You can zoom in and out on the data points. You can also hover over the Legend on the right to highlight only the data that corresponds to the symbol you are hovering over. Hovering over a datapoint give your more information. Finally you can lasso (SHIFT-Click and Drag) a set of points to single them out.
+<br /><br />
+This chart is interactive. You can zoom in and out on the data points. You can also hover over the Legend on the right to highlight only the data that corresponds to the symbol or color you are hovering over. Hovering over a datapoint gives your more information. Finally you can lasso (SHIFT-Click and Drag) a set of points to single them out.
 
 ```{r CHO_death_interactive, echo=FALSE}
 
@@ -156,36 +160,7 @@ scatterD3(x = choDeathData$choAgeStandValue,
           tooltip_text = tooltips)
 ```
 
-
-```{r maleonly, echo=FALSE}
-
-choDeathData %>% 
-  filter(sex == "Male") %>% 
-  ggplot(aes(x=choCrudeValue, y=totalCVDvalue)) +
-  geom_point(shape=1) +    # Use hollow circles
-  geom_smooth(method = lm) +
-  theme_light(9) +
-  labs(x = "Cholesterol Mean mmol/L\n", y = "Male CVD Death rate per 100,000", 
-       linetype = NULL, color = NULL,
-       title = "Male Cardiovascualr Death Rate vs. Mean Cholesteral (crude) (by region)\n")
-
-```
-
-
-```{r femaleCHOCrude, echo=FALSE}
-choDeathData %>% 
-  filter(sex == "Female") %>% 
-  ggplot(aes(x=choCrudeValue, y=totalCVDvalue)) +
-  geom_point(shape=1) +    # Use hollow circles
-  geom_smooth(method = lm) +
-  theme_light(9) +
-  labs(x = "Cholesterol Mean mmol/L\n", y = "Female CVD Death rate per 100,000", 
-       linetype = NULL, color = NULL,
-       title = "Female Cardiovascular Death Rate vs. Mean Cholesteral (crude) (by region)\n")
-
-```
-
-
+<br /><br />
 ```{r maleCHOAgeStand, echo=FALSE}
 choDeathData %>% 
   filter(sex == "Male") %>% 
@@ -195,11 +170,11 @@ choDeathData %>%
   theme_light(9) +
   labs(x = "Cholesterol Mean mmol/L\n", y = "Male CVD Death rate per 100,000", 
        linetype = NULL, color = NULL,
-       title = "Male Cardiovascualr Death Rate vs. Mean Cholesteral (Age Standardized) (by region)\n")
+       title = "Male Cardiovascualr Death Rate vs. Mean Cholesteral (Age Standardized) (by country)\n")
 
 ```
 
-
+<br />
 ```{r femaleCHOAgeStand, echo=FALSE}
 choDeathData %>% 
   filter(sex == "Female") %>% 
@@ -209,6 +184,9 @@ choDeathData %>%
   theme_light(9) +
   labs(x = "Cholesterol Mean mmol/L\n", y = "Female CVD Death rate per 100,000", 
        linetype = NULL, color = NULL,
-       title = "Female Cardiovascualr Death Rate vs. Mean Cholesteral (Age Standardized) (by region)\n")
+       title = "Female Cardiovascualr Death Rate vs. Mean Cholesteral (Age Standardized) (by country)\n")
 
 ```
+
+## Conclusion
+It seems from the data that there is no correlation between high cholesterol and cadiovascular disease deaths. As a matter of fact the opposite seems to be true; countries with higher cholesterol levels have lower CVD death rates than countries with lower cholesterol levels. 
